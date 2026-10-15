@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blower Math - app</title>
+<link rel="stylesheet" href="https://unpkg.com/sakura.css/css/sakura.css">
+<style>
+  :root { --accent: #7a4a3a; }
+  h1 { color: var(--accent); margin-bottom: 0.2em; }
+  .tag { color: var(--accent); font-style: italic; }
+  .card { border: 1px solid #ddd; border-left: 4px solid var(--accent); padding: 1em 1.2em; margin: 1.2em 0; border-radius: 4px; }
+  .big { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-top: 0.8em; }
+  .err { color: #b00; font-weight: 700; }
+  label { display: block; margin-top: 0.6em; font-size: 0.9em; }
+  input, select { max-width: 12em; }
+  .foot { margin-top: 2.5em; font-size: 0.85em; color: #777; }
+</style>
+</head>
+<body>
+<h1>Blower Math</h1>
+<p class="tag">Battery truth, runtime truth and move truth - labeled norms, honest arithmetic.</p>
+
+<div class="card">
+  <h3>The battery truth</h3>
+  <label for="b-volts">Sticker volts (the MAX number)</label>
+  <input id="b-volts" type="number" step="any" value="40">
+  <label for="b-ah">Sticker amp-hours</label>
+  <input id="b-ah" type="number" step="any" value="4">
+  <p class="big" id="b-out"></p>
+</div>
+
+<div class="card">
+  <h3>The runtime truth</h3>
+  <label for="r-wh">Pack watt-hours (from the battery truth)</label>
+  <input id="r-wh" type="number" step="any" value="144">
+  <label for="r-watts">Real turbo draw (watts)</label>
+  <input id="r-watts" type="number" step="any" value="550">
+  <label for="r-claim">Claimed minutes on the box</label>
+  <input id="r-claim" type="number" step="any" value="25">
+  <p class="big" id="r-out"></p>
+</div>
+
+<div class="card">
+  <h3>The move truth</h3>
+  <label for="m-cfm">CFM (the number that moves the pile)</label>
+  <input id="m-cfm" type="number" step="any" value="500">
+  <label for="m-mph">MPH (the number on the sticker)</label>
+  <input id="m-mph" type="number" step="any" value="130">
+  <p class="big" id="m-out"></p>
+</div>
+
+<p class="foot">The 0.9 nominal factor and the CFM bands are labeled norms - the arithmetic is honest, and the rake keeps the honest ledger.</p>
+
+<script src="engine.js"></script>
+<script>
+function g(id){ return document.getElementById(id); }
+function v(id){ var n = parseFloat(g(id).value); return isNaN(n) ? NaN : n; }
+function show(id, s, bad){ var el = g(id); el.textContent = s; el.className = bad ? "err big" : "big"; }
+
+function runBattery(){
+  var args = [v("b-volts"), v("b-ah")];
+  var r = BlowerMath.batteryPlan.apply(null, args);
+  if (r.error) return show("b-out", r.error, true);
+  show("b-out", BlowerMath.renderBattery.apply(null, [r].concat(args)), false);
+}
+function runRuntime(){
+  var args = [v("r-wh"), v("r-watts"), v("r-claim")];
+  var r = BlowerMath.runtimePlan.apply(null, args);
+  if (r.error) return show("r-out", r.error, true);
+  show("r-out", BlowerMath.renderRuntime.apply(null, [r].concat(args)), false);
+}
+function runMove(){
+  var args = [v("m-cfm"), v("m-mph")];
+  var r = BlowerMath.movePlan.apply(null, args);
+  if (r.error) return show("m-out", r.error, true);
+  show("m-out", BlowerMath.renderMove.apply(null, [r].concat(args)), false);
+}
+["b-volts", "b-ah"].forEach(function(id){ g(id).addEventListener("input", runBattery); });
+["r-wh", "r-watts", "r-claim"].forEach(function(id){ g(id).addEventListener("input", runRuntime); });
+["m-cfm", "m-mph"].forEach(function(id){ g(id).addEventListener("input", runMove); });
+runBattery(); runRuntime(); runMove();
+</script>
+</body>
+</html>
